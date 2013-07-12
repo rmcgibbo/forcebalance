@@ -198,10 +198,10 @@ def printcool_dictionary(Dict,title="General options",bold=False,color=2,keywidt
         #print "\'%%-%is\' %% '%s'\n" % (keywidth,str.replace("'","\\'").replace('"','\\"'))
         return eval("\'%%-%is\' %% '%s'\n" % (keywidth,str.replace("'","\\'").replace('"','\\"')))
     if isinstance(Dict, OrderedDict): 
-        logger.info('\n'.join([' '*leftpad + "%s %s \n" % (magic_string(str(key)),str(Dict[key])) for key in Dict if Dict[key] != None]))
+        logger.info('\n'.join([' '*leftpad + "%s %s " % (magic_string(str(key)),str(Dict[key])) for key in Dict if Dict[key] != None]))
     else:
-        logger.info('\n'.join([' '*leftpad + "%s %s \n" % (magic_string(str(key)),str(Dict[key])) for key in sorted([i for i in Dict]) if Dict[key] != None]))
-    logger.info(bar + '\n')
+        logger.info('\n'.join([' '*leftpad + "%s %s " % (magic_string(str(key)),str(Dict[key])) for key in sorted([i for i in Dict]) if Dict[key] != None]))
+    logger.info('\n' + bar + '\n')
 
 #===============================#
 #| Math: Variable manipulation |#
