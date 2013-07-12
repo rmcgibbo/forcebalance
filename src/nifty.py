@@ -164,14 +164,14 @@ def printcool(text,sym="#",bold=False,color=2,ansi=None,bottom='-',minwidth=50,c
         padright = ' '* (width - newlen(line) - len(padleft))
         if ansi != None:
             ansi = str(ansi)
-            logger.info("%s| \x1b[%sm%s" % (sym, ansi, padleft)+line+"%s\x1b[0m |%s\n" % (padright, sym))
+            logger.info("%s| \x1b[%sm%s " % (sym, ansi, padleft)+line+" %s\x1b[0m |%s\n" % (padright, sym))
         elif color != None:
             if color == 0 and bold:
-                logger.info("%s| \x1b[1m%s" % (sym, padleft)+line+"%s\x1b[0m |%s\n" % (padright, sym))
+                logger.info("%s| \x1b[1m%s " % (sym, padleft)+line+" %s\x1b[0m |%s\n" % (padright, sym))
             elif color == 0:
-                logger.info("%s| %s" % (sym, padleft)+line+"%s |%s\n" % (padright, sym))
+                logger.info("%s| %s " % (sym, padleft)+line+" %s |%s\n" % (padright, sym))
             else:
-                logger.info("%s| \x1b[%s9%im%s" % (sym, bold and "1;" or "", color, padleft)+line+"%s\x1b[0m |%s\n" % (padright, sym))
+                logger.info("%s| \x1b[%s9%im%s " % (sym, bold and "1;" or "", color, padleft)+line+" %s\x1b[0m |%s\n" % (padright, sym))
             # if color == 3 or color == 7:
             #     print "%s\x1b[40m\x1b[%s9%im%s" % (''.join([sym for i in range(3)]), bold and "1;" or "", color, padleft)+line+"%s\x1b[0m%s\n" % (padright, ''.join([sym for i in range(3)]))
             # else:
