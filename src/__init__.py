@@ -10,5 +10,9 @@ except ImportError:
     print "Could not load scipy module, exiting..."
     exit()
 
-import logging_ as logging
+import logging
 import parser, forcefield, optimizer, objective
+
+# set up package-wide logger
+logging.forcebalanceLogger=logging.getLogger('forcebalance')
+logging.forcebalanceLogger.addHandler(logging.NullHandler())

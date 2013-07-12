@@ -6,6 +6,7 @@ Table of Contents:
 - Pickle: Expand Python's own pickle to accommodate writing XML etree objects
 - Commands for submitting things to the Work Queue
 - Various file and process management functions
+- Logging Handlers
 - Development stuff (not commonly used)
 
 Named after the mighty Sniffy Handy Nifty (King Sniffy)
@@ -29,6 +30,9 @@ from subprocess import PIPE, STDOUT
 from collections import OrderedDict, defaultdict
 # import IPython as ip # For debugging
 
+from forcebalance import logging
+logger = logging.getLogger(__name__)
+
 ## Boltzmann constant
 kb = 0.0083144100163
 ## Q-Chem to GMX unit conversion for energy
@@ -48,7 +52,7 @@ def pvec1d(vec1d, precision=1):
     """
     v2a = array(vec1d)
     for i in range(v2a.shape[0]):
-        print "%% .%ie" % precision % v2a[i],
+        logger.info("%% .%ie" % precision % v2a[i])
     print
 
 def pmat2d(mat2d, precision=1):
@@ -151,7 +155,7 @@ def printcool(text,sym="#",bold=False,color=2,ansi=None,bottom='-',minwidth=50,c
     bar = ''.join(["=" for i in range(width + 6)])
     bar = sym + bar + sym
     #bar = ''.join([sym for i in range(width + 8)])
-    print '\r'+bar
+    logger.info('\r'+bar + '\n')
     for line in text:
         if center:
             padleft = ' ' * ((width - newlen(line)) / 2)
@@ -160,21 +164,21 @@ def printcool(text,sym="#",bold=False,color=2,ansi=None,bottom='-',minwidth=50,c
         padright = ' '* (width - newlen(line) - len(padleft))
         if ansi != None:
             ansi = str(ansi)
-            print "%s| \x1b[%sm%s" % (sym, ansi, padleft),line,"%s\x1b[0m |%s" % (padright, sym)
+            logger.info("%s| \x1b[%sm%s" % (sym, ansi, padleft)+line+"%s\x1b[0m |%s\n" % (padright, sym))
         elif color != None:
             if color == 0 and bold:
-                print "%s| \x1b[1m%s" % (sym, padleft),line,"%s\x1b[0m |%s" % (padright, sym)
+                logger.info("%s| \x1b[1m%s" % (sym, padleft)+line+"%s\x1b[0m |%s\n" % (padright, sym))
             elif color == 0:
-                print "%s| %s" % (sym, padleft),line,"%s |%s" % (padright, sym)
+                logger.info("%s| %s" % (sym, padleft)+line+"%s |%s\n" % (padright, sym))
             else:
-                print "%s| \x1b[%s9%im%s" % (sym, bold and "1;" or "", color, padleft),line,"%s\x1b[0m |%s" % (padright, sym)
+                logger.info("%s| \x1b[%s9%im%s" % (sym, bold and "1;" or "", color, padleft)+line+"%s\x1b[0m |%s\n" % (padright, sym))
             # if color == 3 or color == 7:
-            #     print "%s\x1b[40m\x1b[%s9%im%s" % (''.join([sym for i in range(3)]), bold and "1;" or "", color, padleft),line,"%s\x1b[0m%s" % (padright, ''.join([sym for i in range(3)]))
+            #     print "%s\x1b[40m\x1b[%s9%im%s" % (''.join([sym for i in range(3)]), bold and "1;" or "", color, padleft)+line+"%s\x1b[0m%s\n" % (padright, ''.join([sym for i in range(3)]))
             # else:
-            #     print "%s\x1b[%s9%im%s" % (''.join([sym for i in range(3)]), bold and "1;" or "", color, padleft),line,"%s\x1b[0m%s" % (padright, ''.join([sym for i in range(3)]))
+            #     print "%s\x1b[%s9%im%s" % (''.join([sym for i in range(3)]), bold and "1;" or "", color, padleft)+line+"%s\x1b[0m%s\n" % (padright, ''.join([sym for i in range(3)]))
         else:
             warn_press_key("Inappropriate use of printcool")
-    print bar
+    logger.info(bar + '\n')
     botbar = ''.join([bottom for i in range(width + 8)])
     return botbar
 
@@ -191,13 +195,13 @@ def printcool_dictionary(Dict,title="General options",bold=False,color=2,keywidt
     def magic_string(str):
         # This cryptic command returns a string with the number of characters specified as a variable. :P
         # Useful for printing nice-looking dictionaries, i guess.
-        #print "\'%%-%is\' %% '%s'" % (keywidth,str.replace("'","\\'").replace('"','\\"'))
-        return eval("\'%%-%is\' %% '%s'" % (keywidth,str.replace("'","\\'").replace('"','\\"')))
+        #print "\'%%-%is\' %% '%s'\n" % (keywidth,str.replace("'","\\'").replace('"','\\"'))
+        return eval("\'%%-%is\' %% '%s'\n" % (keywidth,str.replace("'","\\'").replace('"','\\"')))
     if isinstance(Dict, OrderedDict): 
-        print '\n'.join([' '*leftpad + "%s %s " % (magic_string(str(key)),str(Dict[key])) for key in Dict if Dict[key] != None])
+        logger.info('\n'.join([' '*leftpad + "%s %s \n" % (magic_string(str(key)),str(Dict[key])) for key in Dict if Dict[key] != None]))
     else:
-        print '\n'.join([' '*leftpad + "%s %s " % (magic_string(str(key)),str(Dict[key])) for key in sorted([i for i in Dict]) if Dict[key] != None])
-    print bar
+        logger.info('\n'.join([' '*leftpad + "%s %s \n" % (magic_string(str(key)),str(Dict[key])) for key in sorted([i for i in Dict]) if Dict[key] != None]))
+    logger.info(bar + '\n')
 
 #===============================#
 #| Math: Variable manipulation |#
@@ -241,7 +245,7 @@ def floatornan(word):
     if isfloat(word):
         return float(word)
     else:
-        print "Setting %s to % .1e" % big
+        logger.info("Setting %s to % .1e" % big)
         return big
 
 def col(vec):
@@ -342,7 +346,7 @@ def get_least_squares(x, y, w = None, thresh=1e-12):
     n_x = X.shape[0]
     n_fit = X.shape[1]
     if n_fit > n_x:
-        print "Argh? It seems like this problem is underdetermined!"
+        logger.warning("Argh? It seems like this problem is underdetermined!")
     # Build the weight matrix.
     if w != None:
         if len(w) != n_x:
@@ -370,7 +374,7 @@ def get_least_squares(x, y, w = None, thresh=1e-12):
 try:
     from lxml import etree
 except: 
-    print "lxml module import failed (You can't use OpenMM or XML force fields)"
+    logger.warning("lxml module import failed (You can't use OpenMM or XML force fields)")
 ## Pickle uses 'flags' to pickle and unpickle different variable types.
 ## Here we use the letter 'x' to signify that the variable type is an XML file.
 XMLFILE='x'
@@ -764,6 +768,25 @@ def warn_once(warning, warnhash = None):
         for line in warning:
             print line
 warn_once.already = set()
+
+#=========================================#
+#| Logging Handlers                      |#
+#=========================================#
+
+class RawStreamHandler(logging.StreamHandler):
+    """Exactly like logging.StreamHandler except it uses the print function
+    to send logging messages to the stream. This is more compatible with
+    how output has been displayed in Forcebalance"""
+    def emit(self, record):
+        message = record.getMessage()
+        self.stream.write(message)
+        self.flush()
+
+class RawFileHandler(logging.FileHandler):
+    def emit(self, record):
+        message = record.getMessage()
+        self.stream.write(message)
+        self.flush()
 
 #=========================================#
 #| Development stuff (not commonly used) |#

@@ -3,7 +3,10 @@ import os, sys, time
 import traceback
 from collections import OrderedDict
 import numpy
-import logging
+import forcebalance
+
+forcebalance.logging.forcebalanceLogger.addHandler(forcebalance.nifty.RawFileHandler('logging.test','w'))
+forcebalance.logging.forcebalanceLogger.setLevel(forcebalance.logging.DEBUG)
 
 class ForceBalanceTestCase(unittest.TestCase):
     def __init__(self,methodName='runTest'):
@@ -59,7 +62,6 @@ class ForceBalanceTestResult(unittest.TestResult):
     def __init__(self):
         """Add logging capabilities to the standard TestResult implementation"""
         super(ForceBalanceTestResult,self).__init__()
-        self.log = logging.getLogger('TestResult')
 
     def startTest(self, test):
         """Notify of test start by writing message to stderr, and also printing to stdout
