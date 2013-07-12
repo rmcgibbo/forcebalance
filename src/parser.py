@@ -367,7 +367,7 @@ def parse_inputs(input_file=None):
     @todo Implement charge groups.
     """
     
-    print "Reading options from file: %s" % input_file
+    logger.info("Reading options from file: %s\n" % input_file)
     section = "NONE"
     # First load in all of the default options.
     options = deepcopy(gen_opts_defaults) # deepcopy to make sure options doesn't make changes to gen_opts_defaults
@@ -424,13 +424,13 @@ def parse_inputs(input_file=None):
                 elif key in opts_types['sections']:
                     this_opt[key] = ParsTab[key](fobj)
                 else:
-                    print "Unrecognized keyword: --- \x1b[1;91m%s\x1b[0m --- in %s section" \
-                          % (key, section)
-                    print "Perhaps this option actually belongs in %s section?" \
-                          % (section == "OPTIONS" and "a TARGET" or "the OPTIONS")
+                    logger.critical("Unrecognized keyword: --- \x1b[1;91m%s\x1b[0m --- in %s section\n" \
+                          % (key, section))
+                    logger.critical("Perhaps this option actually belongs in %s section?\n" \
+                          % (section == "OPTIONS" and "a TARGET" or "the OPTIONS"))
                     sys.exit(1)
             elif section not in mainsections:
-                print "Unrecognized section: %s" % section
+                logger.critical("Unrecognized section: %s\n" % section)
                 sys.exit(1)
         except:
             print "Failed to read in this line! Check your input file."

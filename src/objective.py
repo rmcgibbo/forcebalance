@@ -14,6 +14,9 @@ from forcebalance.baseclass import ForceBalanceBaseClass
 import datetime
 import traceback
 
+from forcebalance import logging
+logger = logging.getLogger(__name__)
+
 try:
     from forcebalance.gmxio import AbInitio_GMX
 except:
@@ -312,17 +315,17 @@ class Penalty:
         self.ptyp = self.Pen_Names[User_Option.upper()]
         self.Pen_Tab = {1 : self.HYP, 2: self.L2_norm, 3: self.FUSE, 4:self.FUSE_L0, 5: self.FUSE_BARRIER}
         if User_Option.upper() == 'L1':
-            print "L1 norm uses the hyperbolic penalty, make sure penalty_hyperbolic_b is set sufficiently small"
+            logger.info("L1 norm uses the hyperbolic penalty, make sure penalty_hyperbolic_b is set sufficiently small\n")
         elif self.ptyp == 1:
-            print "Using hyperbolic regularization (Laplacian prior) with strength %.1e (+), %.1e (x) and tightness %.1e" % (Factor_Add, Factor_Mult, Factor_B)
+            logger.info("Using hyperbolic regularization (Laplacian prior) with strength %.1e (+), %.1e (x) and tightness %.1e\n" % (Factor_Add, Factor_Mult, Factor_B))
         elif self.ptyp == 2:
-            print "Using parabolic regularization (Gaussian prior) with strength %.1e (+), %.1e (x)" % (Factor_Add, Factor_Mult)
+            logger.info("Using parabolic regularization (Gaussian prior) with strength %.1e (+), %.1e (x)\n" % (Factor_Add, Factor_Mult))
         elif self.ptyp == 3:
-            print "Using L1 Fusion Penalty (only relevant for basis set optimizations at the moment) with strength %.1e" % Factor_Add
+            logger.info("Using L1 Fusion Penalty (only relevant for basis set optimizations at the moment) with strength %.1e\n" % Factor_Add)
         elif self.ptyp == 4:
-            print "Using L0-L1 Fusion Penalty (only relevant for basis set optimizations at the moment) with strength %.1e and switching distance %.1e" % (Factor_Add, Alpha)
+            logger.info("Using L0-L1 Fusion Penalty (only relevant for basis set optimizations at the moment) with strength %.1e and switching distance %.1e\n" % (Factor_Add, Alpha))
         elif self.ptyp == 5:
-            print "Using L1 Fusion Penalty with Log Barrier (only relevant for basis set optimizations at the moment) with strength %.1e and barrier distance %.1e" % (Factor_Add, Alpha)
+            logger.info("Using L1 Fusion Penalty with Log Barrier (only relevant for basis set optimizations at the moment) with strength %.1e and barrier distance %.1e\n" % (Factor_Add, Alpha))
 
         ## Find exponential spacings.
         if self.ptyp in [3,4,5]:
