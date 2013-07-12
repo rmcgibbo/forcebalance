@@ -182,7 +182,7 @@ class Optimizer(ForceBalanceBaseClass):
             bar = printcool("Final optimization parameters:\n Paste to input file to restart",bold=True,color=4)
             logger.info("read_mvals\n")
             self.FF.print_map(xk)
-            logger.info("/read_mvals\n")
+            logger.info("\n/read_mvals\n")
             bar = printcool("Final physical parameters:",bold=True,color=4)
             self.FF.print_map(self.FF.create_pvals(xk))
             logger.info('\n' + bar + '\n')

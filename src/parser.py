@@ -55,6 +55,9 @@ from nifty import printcool, printcool_dictionary, which
 from copy import deepcopy
 from collections import OrderedDict
 
+from forcebalance import logging
+logger = logging.getLogger(__name__)
+
 ## Default general options.
 ## Note that the documentation is included in part of the key; this will aid in automatic doc-extraction. :)
 ## In the 5-tuple we have: Default value, priority (larger number means printed first), short docstring, description of scope, list of filter strings for pulling out pertinent targets (MakeInputFile.py)
