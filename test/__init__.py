@@ -173,14 +173,8 @@ class ForceBalanceTestRunner(object):
 
         # otherwise do a normal test run
         else:
-            self.console = sys.stdout
-            sys.stdout = open(program_output, 'w')
-
             unittest.registerResult(result)
             tests.run(result)
-
-            sys.stdout.close()
-            sys.stdout = self.console
 
         result.stopTestRun(tests)
         ### STOP TESTING ###
