@@ -10,4 +10,5 @@ except ImportError:
     print "Could not load scipy module, exiting..."
     exit()
 
+import logging_ as logging
 import parser, forcefield, optimizer, objective
