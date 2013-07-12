@@ -774,15 +774,22 @@ warn_once.already = set()
 #=========================================#
 
 class RawStreamHandler(logging.StreamHandler):
-    """Exactly like logging.StreamHandler except it uses the print function
-    to send logging messages to the stream. This is more compatible with
-    how output has been displayed in Forcebalance"""
+    """Exactly like logging.StreamHandler except it does no extra formatting
+    before sending logging messages to the stream. This is more compatible with
+    how output has been displayed in ForceBalance. Default stream has also been
+    changed from stderr to stdout"""
+    def __init__(self, stream = sys.stdout):
+        super(RawStreamHandler, self).__init__(stream)
+    
     def emit(self, record):
         message = record.getMessage()
         self.stream.write(message)
         self.flush()
 
 class RawFileHandler(logging.FileHandler):
+    """Exactly like logging.FileHandler except it does no extra formatting
+    before sending logging messages to the file. This is more compatible with
+    how output has been displayed in ForceBalance."""
     def emit(self, record):
         message = record.getMessage()
         self.stream.write(message)

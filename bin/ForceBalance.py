@@ -14,7 +14,6 @@ import numpy
 numpy.seterr(all='raise')
 
 from forcebalance import logging
-logging.getLogger().addHandler(logging.RawStreamHandler(sys.stdout))
 
 def Run_ForceBalance(input_file):
     """ Create instances of ForceBalance components and run the optimizer.
