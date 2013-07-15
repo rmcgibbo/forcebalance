@@ -4,9 +4,7 @@ import traceback
 from collections import OrderedDict
 import numpy
 import forcebalance
-
-forcebalance.logging.forcebalanceLogger.addHandler(forcebalance.nifty.RawFileHandler('logging.test','w'))
-forcebalance.logging.forcebalanceLogger.setLevel(forcebalance.logging.DEBUG)
+from forcebalance import logging
 
 class ForceBalanceTestCase(unittest.TestCase):
     def __init__(self,methodName='runTest'):
