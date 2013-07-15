@@ -633,7 +633,7 @@ class AbInitio(Target):
         #             STEP 2: Loop through the snapshots.              #
         #==============================================================#
         if self.all_at_once:
-            logger.info("\rExecuting\r")
+            logger.info("\rExecuting\033[K\r")
             M_all = self.energy_force_transformer_all()
             if not cv and (AGrad or AHess):
                 def callM(mvals_):
@@ -644,7 +644,7 @@ class AbInitio(Target):
                     dM_all[:,p,:], ddM_all[:,p,:] = f12d3p(fdwrap(callM, mvals, p), h = self.h, f0 = M_all)
         for i in range(ns):
             if i % 100 == 0:
-                logger.info("\rIncrementing quantities for snapshot %i\r" % i)
+                logger.info("\rIncrementing quantities for snapshot %i\033[K\r" % i)
             # Build Boltzmann weights and increment partition function.
             P   = self.whamboltz_wts[i]
             Z  += P
@@ -806,7 +806,7 @@ class AbInitio(Target):
         # In the case of no covariance, this is just a diagonal matrix #
         # with the RMSD energy in [0,0] and the RMS gradient in [n, n] #
         #==============================================================#
-        logger.info("Done with snapshots, building objective function now\r")
+        logger.info("Done with snapshots, building objective function now")
         if (self.w_energy > 0.0 or self.w_force > 0.0 or self.w_netforce > 0.0 or self.w_torque > 0.0):
             wtot    = self.w_energy + self.w_force + self.w_netforce + self.w_torque
             EWt     = self.w_energy / wtot

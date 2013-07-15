@@ -34,9 +34,9 @@ def weight_info(W, PT, N_k, verbose=True):
         N += ns
     C = np.array(C)
     if verbose:
-        print "MBAR Results for Phase Point %s, Box, Contributions:" % str(PT)
-        print C
-        print "InfoContent: % .2f snapshots (%.2f %%)" % (I, 100*I/len(W))
+        logger.debug("MBAR Results for Phase Point %s, Box, Contributions:\n" % str(PT))
+        logger.debug(C + '\n')
+        logger.debug("InfoContent: % .2f snapshots (%.2f %%)\n" % (I, 100*I/len(W)))
     return C
 
 # NPT_Trajectory = namedtuple('NPT_Trajectory', ['fnm', 'Rhos', 'pVs', 'Energies', 'Grads', 'mEnergies', 'mGrads', 'Rho_errs', 'Hvap_errs'])
@@ -226,11 +226,11 @@ class Liquid(Target):
         Sum = sum(Weights.values())
         for i in Weights:
             Weights[i] /= Sum
-        print "Weights have been renormalized to", sum(Weights.values())
+        logger.info("Weights have been renormalized to" + sum(Weights.values()) + '\n')
         # Use least-squares or hyperbolic (experimental) objective.
         LeastSquares = True
 
-        print "Physical quantity %s uses denominator = % .4f" % (name, Denom)
+        logger.info("Physical quantity %s uses denominator = % .4f\n" % (name, Denom))
         if not LeastSquares:
             # If using a hyperbolic functional form
             # we still want the contribution to the 
@@ -437,10 +437,10 @@ class Liquid(Target):
                 U_kln[k, m, :]   = Energies[kk] + P*Vols[kk]*pvkj
                 U_kln[k, m, :]  *= beta
         if len(BPoints) > 1:
-            print "Running MBAR analysis on %i states..." % len(BPoints)
+            logger.info("Running MBAR analysis on %i states...\n" % len(BPoints))
             mbar = pymbar.MBAR(U_kln, N_k, verbose=True, relative_tolerance=5.0e-8)
             W1 = mbar.getWeights()
-            print "Done"
+            logger.info("Done\n")
         elif len(BPoints) == 1:
             W1 = np.ones((BPoints*Shots,BPoints),dtype=float)
             W1 /= BPoints*Shots
@@ -482,7 +482,7 @@ class Liquid(Target):
             bar = printcool("Self-polarization correction to \nenthalpy of vaporization is % .3f kJ/mol%s" % (EPol, ", Derivative:" if AGrad else ""))
             if AGrad:
                 self.FF.print_map(vals=GEPol)
-                print bar
+                logger.info(bar + '\n')
             
         for i, PT in enumerate(Points):
             T = PT[0]
@@ -519,13 +519,13 @@ class Liquid(Target):
                     Hvap_calc[PT] -= EPol
                     Hvap_grad[PT] -= GEPol
                 if hasattr(self,'use_cni') and self.use_cni:
-                    print "Adding % .3f to enthalpy of vaporization at" % self.RefData['cni'][PT], PT
+                    logger.info("Adding % .3f to enthalpy of vaporization at %s\n" % (self.RefData['cni'][PT], PT))
                     Hvap_calc[PT] += self.RefData['cni'][PT]
                 if hasattr(self,'use_cvib_intra') and self.use_cvib_intra:
-                    print "Adding % .3f to enthalpy of vaporization at" % self.RefData['cvib_intra'][PT], PT
+                    logger.info("Adding % .3f to enthalpy of vaporization at %s\n" % (self.RefData['cvib_intra'][PT], PT))
                     Hvap_calc[PT] += self.RefData['cvib_intra'][PT]
                 if hasattr(self,'use_cvib_inter') and self.use_cvib_inter:
-                    print "Adding % .3f to enthalpy of vaporization at" % self.RefData['cvib_inter'][PT], PT
+                    logger.info("Adding % .3f to enthalpy of vaporization at %s\n" % (self.RefData['cvib_inter'][PT], PT))
                     Hvap_calc[PT] += self.RefData['cvib_inter'][PT]
             else:
                 Hvap_calc[PT]  = 0.0
@@ -547,10 +547,10 @@ class Liquid(Target):
             ## Isobaric heat capacity.
             Cp_calc[PT] = 1000/(4.184*NMol*kT*T) * (avg(H**2) - avg(H)**2)
             if hasattr(self,'use_cvib_intra') and self.use_cvib_intra:
-                print "Adding", self.RefData['devib_intra'][PT], "to the heat capacity"
+                logger.info("Adding " + self.RefData['devib_intra'][PT] + " to the heat capacity\n")
                 Cp_calc[PT] += self.RefData['devib_intra'][PT]
             if hasattr(self,'use_cvib_inter') and self.use_cvib_inter:
-                print "Adding", self.RefData['devib_inter'][PT], "to the heat capacity"
+                logger.info("Adding" + self.RefData['devib_inter'][PT] + "to the heat capacity")
                 Cp_calc[PT] += self.RefData['devib_inter'][PT]
             GCp1 = 2*covde(H) * 1000 / 4.184 / (NMol*kT*T)
             GCp2 = mBeta*covde(H**2) * 1000 / 4.184 / (NMol*kT*T)
@@ -613,7 +613,7 @@ class Liquid(Target):
             bar = printcool("Density objective function: % .3f%s" % (X_Rho, ", Derivative:" if AGrad else ""))
             if AGrad:
                 self.FF.print_map(vals=G_Rho)
-                print bar
+                logger.info(bar + '\n')
             PrintDict['Density'] = "% 10.5f % 8.3f % 14.5e" % (X_Rho, w_1, X_Rho*w_1)
 
         if X_Hvap > 0:
@@ -621,7 +621,7 @@ class Liquid(Target):
             bar = printcool("H_vap objective function: % .3f%s" % (X_Hvap, ", Derivative:" if AGrad else ""))
             if AGrad:
                 self.FF.print_map(vals=G_Hvap)
-                print bar
+                logger.info(bar + '\n')
             PrintDict['Enthalpy of Vaporization'] = "% 10.5f % 8.3f % 14.5e" % (X_Hvap, w_2, X_Hvap*w_2)
 
         if X_Alpha > 0:
@@ -629,7 +629,7 @@ class Liquid(Target):
             bar = printcool("Thermal Expansion objective function: % .3f%s" % (X_Alpha, ", Derivative:" if AGrad else ""))
             if AGrad:
                 self.FF.print_map(vals=G_Alpha)
-                print bar
+                logger.info(bar + '\n')
             PrintDict['Thermal Expansion Coefficient'] = "% 10.5f % 8.3f % 14.5e" % (X_Alpha, w_3, X_Alpha*w_3)
 
         if X_Kappa > 0:
@@ -637,7 +637,7 @@ class Liquid(Target):
             bar = printcool("Compressibility objective function: % .3f%s" % (X_Kappa, ", Derivative:" if AGrad else ""))
             if AGrad:
                 self.FF.print_map(vals=G_Kappa)
-                print bar
+                logger.info(bar + '\n')
             PrintDict['Isothermal Compressibility'] = "% 10.5f % 8.3f % 14.5e" % (X_Kappa, w_4, X_Kappa*w_4)
 
         if X_Cp > 0:
@@ -645,7 +645,7 @@ class Liquid(Target):
             bar = printcool("Heat Capacity objective function: % .3f%s" % (X_Cp, ", Derivative:" if AGrad else ""))
             if AGrad:
                 self.FF.print_map(vals=G_Cp)
-                print bar
+                logger.info(bar + '\n')
             PrintDict['Isobaric Heat Capacity'] = "% 10.5f % 8.3f % 14.5e" % (X_Cp, w_5, X_Cp*w_5)
 
         if X_Eps0 > 0:
@@ -653,7 +653,7 @@ class Liquid(Target):
             bar = printcool("Dielectric Constant objective function: % .3f%s" % (X_Eps0, ", Derivative:" if AGrad else ""))
             if AGrad:
                 self.FF.print_map(vals=G_Eps0)
-                print bar
+                logger.info(bar + '\n')
             PrintDict['Dielectric Constant'] = "% 10.5f % 8.3f % 14.5e" % (X_Eps0, w_6, X_Eps0*w_6)
 
         PrintDict['Total'] = "% 10s % 8s % 14.5e" % ("","",Objective)
