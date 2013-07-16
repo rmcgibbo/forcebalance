@@ -4,7 +4,6 @@ import traceback
 from collections import OrderedDict
 import numpy
 import forcebalance
-from forcebalance import logging
 
 class ForceBalanceTestCase(unittest.TestCase):
     def __init__(self,methodName='runTest'):
@@ -15,6 +14,8 @@ class ForceBalanceTestCase(unittest.TestCase):
         self.longMessage=True
         self.addCleanup(os.chdir, os.getcwd())  # directory changes shouldn't persist between tests
         self.addTypeEqualityFunc(numpy.ndarray, self.assertNdArrayEqual)
+
+        self.logger = forcebalance.logging.getLogger('test.' + __name__[5:])
 
     def shortDescription(self):
         """Default shortDescription function returns None value if no description
@@ -60,13 +61,14 @@ class ForceBalanceTestResult(unittest.TestResult):
     def __init__(self):
         """Add logging capabilities to the standard TestResult implementation"""
         super(ForceBalanceTestResult,self).__init__()
+        self.logger = forcebalance.logging.getLogger('test.results')
 
     def startTest(self, test):
         """Notify of test start by writing message to stderr, and also printing to stdout
         @override unittest.TestResult.startTest(test)"""
 
         super(ForceBalanceTestResult, self).startTest(test)
-        sys.stderr.write("---     " + test.shortDescription())
+        self.logger.info("---     " + test.shortDescription())
         print "<<<<<<<< Starting %s >>>>>>>>\n" % test.id()
 
     def addFailure(self, test, err):
@@ -74,24 +76,24 @@ class ForceBalanceTestResult(unittest.TestResult):
         @override unittest.TestResult.addFailure(test,err)"""
 
         super(ForceBalanceTestResult, self).addFailure(test,err)
-        sys.stderr.write("\r\x1b[31;1m" + "FAIL" + "\x1b[0m    " + test.shortDescription() + "\n")
+        self.logger.info("\r\x1b[31;1m" + "FAIL" + "\x1b[0m    " + test.shortDescription() + "\n")
         
         errorMessage = self.buildErrorMessage(test, err)
 
         for line in errorMessage.splitlines():
-            sys.stderr.write("\t >\t" + line + "\n")
+            self.logger.info("\t >\t" + line + "\n")
 
     def addError(self, test, err):
         """Run whenever a test comes back with an unexpected exception
         @override unittest.TestResult.addError(test,err)"""
 
         super(ForceBalanceTestResult, self).addError(test,err)
-        sys.stderr.write("\r\x1b[33;1mERROR\x1b[0m   " + test.shortDescription() + "\n")
+        self.logger.info("\r\x1b[33;1mERROR\x1b[0m   " + test.shortDescription() + "\n")
 
         errorMessage = self.buildErrorMessage(test,err)
 
         for line in errorMessage.splitlines():
-            sys.stderr.write("\t >\t" + line + "\n")
+            self.logger.info("\t >\t" + line + "\n")
     
     def buildErrorMessage(self, test, err):
         """Compile error data from test exceptions into a helpful message"""
@@ -107,14 +109,14 @@ class ForceBalanceTestResult(unittest.TestResult):
         """Run whenever a test comes back as passed
         @override unittest.TestResult.addSuccess(test)"""
 
-        sys.stderr.write("\r\x1b[32mOK\x1b[0m      " + test.shortDescription() + "\n")
+        self.logger.info("\r\x1b[32mOK\x1b[0m      " + test.shortDescription() + "\n")
 
     def addSkip(self, test, err=""):
         """Run whenever a test is skipped
         @override unittest.TestResult.addSkip(test,err)"""
 
-        sys.stderr.write("\r\x1b[33;1mSKIP\x1b[0m    " + test.shortDescription() + "\n")
-        if err: sys.stderr.write("\t\t%s\n" % err)
+        self.logger.info("\r\x1b[33;1mSKIP\x1b[0m    " + test.shortDescription() + "\n")
+        if err: self.logger.info("\t\t%s\n" % err)
 
     def stopTest(self, test):
         """Run whenever a test is finished, regardless of the result
@@ -129,17 +131,24 @@ class ForceBalanceTestResult(unittest.TestResult):
         """Run after all tests have finished"""
 
         self.runTime = time.time()-self.runTime
-        sys.stderr.write("\n<run=%d errors=%d fail=%d in %.2fs>\n" % (self.testsRun,len(self.errors),len(self.failures), self.runTime))
-        if self.wasSuccessful(): sys.stderr.write("All tests passed successfully\n")
-        else: sys.stderr.write("Some tests failed or had errors!\n")
+        self.logger.info("\n<run=%d errors=%d fail=%d in %.2fs>\n" % (self.testsRun,len(self.errors),len(self.failures), self.runTime))
+        if self.wasSuccessful(): self.logger.info("All tests passed successfully\n")
+        else: self.logger.info("Some tests failed or had errors!\n")
 
 class ForceBalanceTestRunner(object):
     """This test runner class manages the running and logging of tests.
        It controls WHERE test results go but not what is recorded.
        Once the tests have finished running, it will return the test result
        in the standard unittest.TestResult format"""
+    def __init__(self, logger=forcebalance.logging.getLogger("test"), verbose = False):
+        self.logger = logger
 
-    def run(self,test_modules=[],pretend=False,program_output='test/test.log',quick=False):
+    def run(self,test_modules=[],pretend=False,program_output='test/test.log',quick=False, verbose=False):
+        if verbose:
+            self.logger.setLevel(forcebalance.logging.DEBUG)
+        else:
+            self.logger.setLevel(forcebalance.logging.INFO)
+
         # first install unittest interrupt handler which gracefully finishes current test on Ctrl+C
         unittest.installHandler()
 
@@ -151,7 +160,7 @@ class ForceBalanceTestRunner(object):
                 module_tests=unittest.defaultTestLoader.loadTestsFromModule(m)
                 tests.addTest(module_tests)
             except:
-                print "Error loading '%s'" % module
+                self.logger.critical("Error loading '%s'\n" % module)
                 print traceback.print_exc()
 
         result = ForceBalanceTestResult()
@@ -171,8 +180,17 @@ class ForceBalanceTestRunner(object):
 
         # otherwise do a normal test run
         else:
+            self.console = sys.stdout
+            sys.stdout = open(program_output, 'w')
+
+            self.logger.addHandler(forcebalance.nifty.RawStreamHandler(sys.stderr))
+            self.logger.setLevel(forcebalance.logging.DEBUG)
+
             unittest.registerResult(result)
             tests.run(result)
+
+            sys.stdout.close()
+            sys.stdout = self.console
 
         result.stopTestRun(tests)
         ### STOP TESTING ###
@@ -302,5 +320,4 @@ class TestValues(object):
     water_tgt_opts = [tgt_opt.copy(), tgt_opt.copy()]
     water_tgt_opts[0].update({'type': 'ABINITIO_GMX', 'name': 'cluster-06'})
     water_tgt_opts[1].update({'type': 'ABINITIO_GMX', 'name': 'cluster-12'})
-    
 
