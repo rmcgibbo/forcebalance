@@ -11,9 +11,10 @@ except ImportError:
     exit()
 
 import logging
-import parser, forcefield, optimizer, objective, nifty
+import parser, forcefield, optimizer, objective
 
-# set up package level logger that by default writes to stdout
+# set up package level logger that by default does nothing
 logging.logger=logging.getLogger('forcebalance')
-logging.logger.addHandler(nifty.RawStreamHandler())
+logging.logger.addHandler(logging.NullHandler())
 logging.logger.setLevel(logging.INFO)
+
