@@ -119,7 +119,7 @@ FrameVariableNames = set(['xyzs', 'comms', 'boxes', 'qm_forces', 'qm_energies', 
 # tinkersuf  = String that comes after the XYZ coordinates in TINKER .xyz or .arc files
 # resid      = Residue IDs (can come from MM coordinate file)
 # resname    = Residue names
-AtomVariableNames = set(['elem', 'partial_charge', 'atomname', 'atomtype', 'tinkersuf', 'resid', 'resname', 'qcsuf', 'qm_ghost'])
+AtomVariableNames = set(['elem', 'partial_charge', 'atomname', 'atomtype', 'tinkersuf', 'resid', 'resname', 'qcsuf', 'qm_ghost', 'chain', 'altloc', 'icode'])
 #=========================================#
 #| This can be any data attribute we     |#
 #| want but it's usually some property   |#
@@ -453,7 +453,12 @@ def both(A, B, key):
     return key in A.Data and key in B.Data
 
 def diff(A, B, key):
-    return key in A.Data and key in B.Data and A.Data[key] != B.Data[key]
+    if not (key in A.Data and key in B.Data) : return False
+    else:
+        if type(A.Data[key]) is np.ndarray:
+            return (A.Data[key] != B.Data[key]).any()
+        else:
+            return A.Data[key] != B.Data[key]
 
 def either(A, B, key):
     return key in A.Data or key in B.Data
@@ -768,7 +773,7 @@ class Molecule(object):
     def append(self,other):
         self += other
 
-    def __init__(self, fnm = None, ftype = None, build_topology = True):
+    def __init__(self, fnm = None, ftype = None, positive_resid=True, build_topology = True):
         """ To create the Molecule object, we simply define the table of
         file reading/writing functions and read in a file if it is
         provided."""
@@ -817,6 +822,7 @@ class Molecule(object):
                           'arc'     : 'tinker'}
         ## Creates entries like 'gromacs' : 'gromacs' and 'xyz' : 'xyz'
         ## in the Funnel
+        self.positive_resid = positive_resid
         for i in set(self.Read_Tab.keys() + self.Write_Tab.keys()):
             self.Funnel[i] = i
         # Data container.  All of the data is stored in here.
@@ -845,7 +851,7 @@ class Molecule(object):
             #     self.comms[i] = self.comms[i][:100] if len(self.comms[i]) > 100 else self.comms[i]
             # Attempt to build the topology for small systems. :)
             if 'networkx' in sys.modules and build_topology:
-                if self.na > 3000:
+                if self.na > 10000:
                     print "Warning: Large number of atoms (%i), topology building may take a long time" % self.na
                 self.topology = self.build_topology()
                 self.molecules = nx.connected_component_subgraphs(self.topology)
@@ -1807,10 +1813,15 @@ class Molecule(object):
         X=PDBLines[0]
 
         XYZ=np.array([[x.x,x.y,x.z] for x in X])/10.0#Convert to nanometers
+        AltLoc=np.array([x.altLoc for x in X],'str') # Alternate location
+        ICode=np.array([x.iCode for x in X],'str') # Insertion code
         ChainID=np.array([x.chainID for x in X],'str')
         AtomNames=np.array([x.name for x in X],'str')
         ResidueNames=np.array([x.resName for x in X],'str')
         ResidueID=np.array([x.resSeq for x in X],'int')
+        # Try not to number Residue IDs starting from 1...
+        if self.positive_resid:
+            ResidueID=ResidueID-ResidueID[0]+1
 
         XYZList=[]
         for Model in PDBLines:
@@ -1841,7 +1852,7 @@ class Molecule(object):
                     for i in range(2, len(s)):
                         bonds.append((int(s[1])-1, int(s[i])-1))
 
-        Answer={"xyzs":XYZList, "chain":ChainID, "atomname":AtomNames,
+        Answer={"xyzs":XYZList, "chain":ChainID, "altloc":AltLoc, "icode":ICode, "atomname":AtomNames,
                 "resid":ResidueID, "resname":ResidueNames, "elem":elem,
                 "comms":['' for i in range(len(XYZList))]}
 
@@ -2352,45 +2363,57 @@ class Molecule(object):
             self.resname = [resname for i in range(self.na)]
             
     def require_boxes(self):
+        def buildbox(line):
+            s = [float(i) for i in line.split()]
+            if len(s) == 1:
+                a = s[0]
+                b = s[0]
+                c = s[0]
+                alpha = 90.0
+                beta = 90.0
+                gamma = 90.0
+                return BuildLatticeFromLengthsAngles(a, b, c, alpha, beta, gamma)
+            elif len(s) == 3:
+                a = s[0]
+                b = s[1]
+                c = s[2]
+                alpha = 90.0
+                beta = 90.0
+                gamma = 90.0
+                return BuildLatticeFromLengthsAngles(a, b, c, alpha, beta, gamma)
+            elif len(s) == 6:
+                a = s[0]
+                b = s[1]
+                c = s[2]
+                alpha = s[3]
+                beta = s[4]
+                gamma = s[5]
+                return BuildLatticeFromLengthsAngles(a, b, c, alpha, beta, gamma)
+            elif len(s) == 9:
+                v1 = np.array([s[0], s[3], s[4]])
+                v2 = np.array([s[5], s[1], s[6]])
+                v3 = np.array([s[7], s[8], s[2]])
+                return BuildLatticeFromVectors(v1, v2, v3)
+            else:
+                raise Exception("Not sure what to do since you gave me %i numbers" % len(s))
+            
         if 'boxes' not in self.Data or len(self.boxes) != self.ns:
             sys.stderr.write("Please specify the periodic box using:\n")
             sys.stderr.write("1 float (cubic lattice length in Angstrom)\n")
             sys.stderr.write("3 floats (orthogonal lattice lengths in Angstrom)\n")
             sys.stderr.write("6 floats (triclinic lattice lengths and angles in degrees)\n")
             sys.stderr.write("9 floats (triclinic lattice vectors v1(x) v2(y) v3(z) v1(y) v1(z) v2(x) v2(z) v3(x) v3(y) in Angstrom)\n")
+            sys.stderr.write("Or: Name of a file containing one of these lines for each frame in the trajectory\n")
             boxstr = raw_input("Box Vector Input: -> ")
-            box    = [float(i) for i in boxstr.split()]
-            if len(box) == 1:
-                a = box[0]
-                b = box[0]
-                c = box[0]
-                alpha = 90.0
-                beta = 90.0
-                gamma = 90.0
-                self.boxes = [BuildLatticeFromLengthsAngles(a, b, c, alpha, beta, gamma) for i in range(self.ns)]
-            elif len(box) == 3:
-                a = box[0]
-                b = box[1]
-                c = box[2]
-                alpha = 90.0
-                beta = 90.0
-                gamma = 90.0
-                self.boxes = [BuildLatticeFromLengthsAngles(a, b, c, alpha, beta, gamma) for i in range(self.ns)]
-            elif len(box) == 6:
-                a = box[0]
-                b = box[1]
-                c = box[2]
-                alpha = box[3]
-                beta = box[4]
-                gamma = box[5]
-                self.boxes = [BuildLatticeFromLengthsAngles(a, b, c, alpha, beta, gamma) for i in range(self.ns)]
-            elif len(box) == 9:
-                v1 = np.array([box[0], box[3], box[4]])
-                v2 = np.array([box[5], box[1], box[6]])
-                v3 = np.array([box[7], box[8], box[2]])
-                self.boxes = [BuildLatticeFromVectors(v1, v2, v3) for i in range(self.ns)]
+            if os.path.exists(boxstr):
+                boxfile = open(boxstr).readlines()
+                if len(boxfile) != len(self):
+                    raise Exception('Tried to read in the box file, but it has a different length from the number of frames.')
+                else:
+                    self.boxes = [buildbox(line) for line in boxfile]
             else:
-                raise Exception("Not sure what to do since you gave me %i numbers" % len(box))
+                mybox = buildbox(boxstr)
+                self.boxes = [mybox for i in range(self.ns)]
 
 def main():
     print "Basic usage as an executable: molecule.py input.format1 output.format2"

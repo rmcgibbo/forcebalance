@@ -273,7 +273,7 @@ def printsection(heading,optdict,typedict):
     @return Answer List of strings for the section that we are printing out.
     
     """
-    from forcebalance.implemented import Implemented_Targets
+    from forcebalance.objective import Implemented_Targets
     from forcebalance.optimizer import Optimizer
 
     def FilterTargets(search):
@@ -379,7 +379,7 @@ def parse_inputs(input_file=None):
     this_tgt_opt = deepcopy(tgt_opts_defaults)
     # Give back a bunch of default options if input file isn't specified.
     if input_file == None:
-        return options, tgt_opts
+        return (options, [this_tgt_opt])
     fobj = open(input_file)
     for line in fobj:
         try:

@@ -29,6 +29,7 @@ import subprocess
 from subprocess import PIPE, STDOUT
 from collections import OrderedDict, defaultdict
 # import IPython as ip # For debugging
+from forcebalance import logging
 
 from forcebalance import logging
 logger = logging.getLogger(__name__)
